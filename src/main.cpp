@@ -3,19 +3,35 @@
 #include <stdlib.h>
 #include <config.h>
 #include <config.h>
+#include <ChainableLED.h>
 
 #define ECHANTILLON_MOY 10
 #define NB_CAPTEURS 10
 
+
+ChainableLED led(6, 7, 1);
+
+//tableau de couleur pour la LED
+int red[3]    = {255,0,0};
+int orange[3] = {255,128,0};
+int yellow[3] = {255,255,0};
+int green[3]  = {0,255,0};
+int white[3]  = {255,255,255};
+
+
 int mode = 1;/*0 maintenance ; 1 standard  ; 2 eco || définit le mode actuel  */
-#define STANDARD 0 
-#define ECO 1
-#define MAINTENANCE 2
+#define MAINTENANCE 0 
+#define STANDARD    1
+#define ECO         2
 
 //variables pour chauqe boutons servant dans le changement de mode
 bool stepredbutton = false;
 bool stepgreenbutton = false;
 unsigned long red_timer , green_timer;
+const byte redbutton = 4;
+const byte greenbutton = 3;
+
+#define No_GPS  5
 
 int LOG_INTERVALL=10; // intervale entre 2 mesures
 int FILE_MAX_SIZE=4096; // taille d'un fichier log
@@ -54,24 +70,32 @@ typedef struct
   int annee;
 }structRTC;
 
+//prototype des fonctions
+void mesure_capteurs(capteur *pointeur);
+void changemode_red_button();
+void changemode_green_button();
+void set_led_color(int rgb[3]);
 
 void setup() 
-{/
+{
   Serial.begin(9600);
-
-  attachInterrupt(,changemode_red_button ,CHANGE)
-  attachInterrupt(,changemode_green_button ,CHANGE)
+  led.init();
+  pinMode(redbutton,INPUT);
+  pinMode(greenbutton,INPUT);
+  attachInterrupt(digitalPinToInterrupt(redbutton),changemode_red_button ,CHANGE);
+  attachInterrupt(digitalPinToInterrupt(greenbutton),changemode_green_button ,CHANGE);
+  set_led_color(red);
 }
 
 void loop() 
 {
-  int *tabptr[NB_CAPTEURS];
+  capteur *tabptr[NB_CAPTEURS];
   int i ;
   if (mode > 0)
   {
     if (millis() % (LOG_INTERVALL*60000 * mode) == 0)
     {
-      readRTC();
+      //readRTC();
       for (i = 0 ; i< NB_CAPTEURS ; i++)
       {
         if (mode == 2 )
@@ -82,7 +106,7 @@ void loop()
           }
           else
           {
-            mesure_capteurs(tabptr[i]) ;
+            mesure_capteurs(tabptr[i]);
           }
         }
         else
@@ -90,7 +114,7 @@ void loop()
           mesure_capteurs(tabptr[i]) ;
         }
 
-      data_to_history();
+      //data_to_history();
       }
     }
   }
@@ -176,5 +200,10 @@ void changemode_green_button()
 
 void mesure_capteurs(capteur *pointeur)
 {
+  ;
+}
 
+void set_led_color(int rgb[3])
+{
+  led.setColorRGB(0,rgb[0],rgb[1],rgb[2]);
 }
