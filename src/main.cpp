@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <config.h>
+#include <config.h>
 
 #define ECHANTILLON_MOY 10
 #define NB_CAPTEURS 10
@@ -36,9 +37,11 @@ typedef struct
 {
   String value; // la valeur sera stockée sous forme de texte
   bool error;
+  float moyenne;
+  int hist_moyenne[ECHANTILLON_MOY]; 
   int rgberror[3];                     
   int hertzerror;
-  int pin; // 255 correspond au port serie 
+  int pin; // 255 correspond au port serie
 }capteur;
 
 typedef struct 
@@ -53,7 +56,7 @@ typedef struct
 
 
 void setup() 
-{
+{/
   Serial.begin(9600);
 
   attachInterrupt(,changemode_red_button ,CHANGE)
