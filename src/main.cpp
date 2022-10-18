@@ -6,7 +6,7 @@
 #define ECHANTILLON_MOY 10
 #define NB_CAPTEURS 10
 
-int mode = 0;/*0 standard ; 1 eco ; 2 maintenance || définit le mode actuel  */
+int mode = 0;/*0 maintenance ; 1 standard  ; 2 eco || définit le mode actuel  */
 #define STANDARD 0 
 #define ECO 1
 #define MAINTENANCE 2
@@ -15,28 +15,83 @@ int LOG_INTERVALL=10; // intervale entre 2 mesures
 int FILE_MAX_SIZE=4096; // taille d'un fichier log
 int TIMEOUT=30; //
 
-typedef struct element
+typedef struct historique
 {
-  int data;
-  struct element *suivant;
-}element;
+  int data; ///a faire pour chaque capteur 
+  int seconde;
+  int minute;
+  int heure;
+  int jour;
+  int mois;
+  int annee;
+  struct historique*suivant;
+}historique;
 
 typedef struct
 {
   int value;
   bool error;
   float moyenne;
-  element *premier_element;
+  int hist_moyenne[ECHANTILLON_MOY]; 
+  int rgberror[3];                     
+  int hertzerror;
 }capteur;
+
+typedef struct 
+{
+  int seconde;
+  int minute;
+  int heure;
+  int jour;
+  int mois;
+  int annee;
+}structRTC;
 
 
 void setup() 
 {
-  int *tabptr[NB_CAPTEURS];
+
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
+void loop() 
+{
+  int *tabptr[NB_CAPTEURS];
+  int i ;
+  if (mode > 0)
+  {
+    if (millis() % (LOG_INTERVALL*60000 * mode) == 0)
+    {
+      readRTC();
+      for (i = 0 ; i< NB_CAPTEURS ; i++)
+      {
+        if (mode == 2 )
+        {
+          if (i == No_GPS)
+          {
+            if (millis() % (LOG_INTERVALL*60000 * 4) == 0) mesure_capteurs(tabptr[i]) ;
+          }
+          else
+          {
+            mesure_capteurs(tabptr[i]) ;
+          }
+        }
+        else
+        {
+          mesure_capteurs(tabptr[i]) ;
+        }
+
+      data_to_history();
+      }
+    }
+  }
+  else
+  {
+    while (mode == 2)
+    {
+      ;//permettre d'ecceder aux données de la carte SD depuis le port série avec des commandes
+    }
+}
+
 }
 
 void changement_mode(int newmode)
