@@ -6,10 +6,14 @@
 #define ECHANTILLON_MOY 10
 #define NB_CAPTEURS 10
 
-int mode = 0;/*0 maintenance ; 1 standard  ; 2 eco || définit le mode actuel  */
+int mode = 1;/*0 maintenance ; 1 standard  ; 2 eco || définit le mode actuel  */
 #define STANDARD 0 
 #define ECO 1
 #define MAINTENANCE 2
+
+//variables pour chauqe boutons servant dans le changement de mode
+bool stepredbutton = FALSE;
+bool stepgreenbutton = FALSE;
 
 int LOG_INTERVALL=10; // intervale entre 2 mesures
 int FILE_MAX_SIZE=4096; // taille d'un fichier log
@@ -51,6 +55,8 @@ typedef struct
 void setup() 
 {
 
+  attachInterrupt(,changemode_red_button ,CHANGE)
+  attachInterrupt(,changemode_green_button ,CHANGE)
 }
 
 void loop() 
@@ -97,4 +103,39 @@ void loop()
 void changement_mode(int newmode)
 {
   mode = newmode;
+}
+
+void changemode_red_button()
+{
+  double long a;
+  double long b;
+  
+  if (stepredbutton == FALSE) stepredbutton = TRUE;
+  else
+  {
+    switch (mode)
+    {
+    case 0:
+      
+      break;
+    
+    case 1:
+
+      break;
+    
+    case 2:
+
+      break;
+    }
+    stepredbutton = TRUE;
+  }
+  for (a=0; a<10000 ; a++) //cela prend environ 100ms a s'executer et remplace donc delay(100)
+  {
+    b++;
+  }
+}
+
+void changemode_green_button()
+{
+
 }
