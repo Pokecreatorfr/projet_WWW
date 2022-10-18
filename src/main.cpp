@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <config.h>
 #include <config.h>
 #include <ChainableLED.h>
@@ -95,7 +93,6 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(redbutton),changemode_red_button ,CHANGE);
   attachInterrupt(digitalPinToInterrupt(greenbutton),changemode_green_button ,CHANGE);
 
-  //noInterrupts();
   if ( digitalRead(redbutton) == HIGH)
   {
     changement_mode(4);
@@ -107,10 +104,7 @@ void setup()
     }
     changement_mode(1);
   }
-  //interrupts();
 
-
-  set_led_color(red);
 }
 
 void loop() 
