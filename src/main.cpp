@@ -174,9 +174,13 @@ void changemode_red_button()
   double long a;
   double long b;
   
+  
+  if (stepredbutton == false  && digitalRead(redbutton) == LOW ) 
+  {
+    stepredbutton = false;
+  }
 
-
-  if (stepredbutton == false  && mode != 4) 
+  if (stepredbutton == false  && mode != 4 ) 
   {
     stepredbutton = true;
     red_timer = millis();
@@ -215,6 +219,10 @@ void changemode_green_button()
   double long a;
   double long b;
   
+  if (stepredbutton == false  && digitalRead(greenbutton) == LOW ) 
+  {
+  stepredbutton = false;
+  }
   if (stepgreenbutton == false && mode != 4 ) 
   {
   stepgreenbutton = true;
