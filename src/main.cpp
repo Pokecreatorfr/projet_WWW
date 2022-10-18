@@ -12,8 +12,8 @@ int mode = 1;/*0 maintenance ; 1 standard  ; 2 eco || définit le mode actuel  *
 #define MAINTENANCE 2
 
 //variables pour chauqe boutons servant dans le changement de mode
-bool stepredbutton = FALSE;
-bool stepgreenbutton = FALSE;
+bool stepredbutton = false;
+bool stepgreenbutton = false;
 unsigned long red_timer , green_timer;
 
 int LOG_INTERVALL=10; // intervale entre 2 mesures
@@ -34,12 +34,11 @@ typedef struct historique
 
 typedef struct
 {
-  int value;
+  String value; // la valeur sera stockée sous forme de texte
   bool error;
-  float moyenne;
-  int hist_moyenne[ECHANTILLON_MOY]; 
   int rgberror[3];                     
   int hertzerror;
+  int pin; // 255 correspond au port serie 
 }capteur;
 
 typedef struct 
@@ -112,9 +111,9 @@ void changemode_red_button()
   double long a;
   double long b;
   
-  if (stepredbutton == FALSE) 
+  if (stepredbutton == false) 
   {
-  stepredbutton = TRUE;
+  stepredbutton = true;
   red_timer = millis();
   }
   else if( millis() - red_timer >= 5000)
@@ -133,9 +132,9 @@ void changemode_red_button()
 
       break;
     }
-    stepredbutton = TRUE;
+    stepredbutton = true;
   }
-  else stepredbutton = TRUE;
+  else stepredbutton = true;
   for (a=0; a<10000 ; a++) //cela prend environ 100ms a s'executer et remplace donc delay(100)
   {
     b++;
@@ -147,7 +146,7 @@ void changemode_green_button()
   double long a;
   double long b;
   
-  if (stepgreenbutton == FALSE) stepgreenbutton = TRUE;
+  if (stepgreenbutton == false) stepgreenbutton = true;
   else
   {
     switch (mode)
@@ -164,10 +163,15 @@ void changemode_green_button()
 
       break;
     }
-    stepgreenbutton = TRUE;
+    stepgreenbutton = true;
   }
   for (a=0; a<10000 ; a++) //cela prend environ 100ms a s'executer et remplace donc delay(100)
   {
     b++;
   }
+}
+
+void mesure_capteurs(capteur *pointeur)
+{
+
 }
