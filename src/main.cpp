@@ -14,6 +14,7 @@ int mode = 1;/*0 maintenance ; 1 standard  ; 2 eco || définit le mode actuel  *
 //variables pour chauqe boutons servant dans le changement de mode
 bool stepredbutton = FALSE;
 bool stepgreenbutton = FALSE;
+unsigned long red_timer , green_timer;
 
 int LOG_INTERVALL=10; // intervale entre 2 mesures
 int FILE_MAX_SIZE=4096; // taille d'un fichier log
@@ -54,6 +55,7 @@ typedef struct
 
 void setup() 
 {
+  Serial.begin(9600);
 
   attachInterrupt(,changemode_red_button ,CHANGE)
   attachInterrupt(,changemode_green_button ,CHANGE)
@@ -110,8 +112,12 @@ void changemode_red_button()
   double long a;
   double long b;
   
-  if (stepredbutton == FALSE) stepredbutton = TRUE;
-  else
+  if (stepredbutton == FALSE) 
+  {
+  stepredbutton = TRUE;
+  red_timer = millis();
+  }
+  else if( millis() - red_timer >= 5000)
   {
     switch (mode)
     {
@@ -129,6 +135,7 @@ void changemode_red_button()
     }
     stepredbutton = TRUE;
   }
+  else stepredbutton = TRUE;
   for (a=0; a<10000 ; a++) //cela prend environ 100ms a s'executer et remplace donc delay(100)
   {
     b++;
@@ -137,5 +144,30 @@ void changemode_red_button()
 
 void changemode_green_button()
 {
+  double long a;
+  double long b;
+  
+  if (stepgreenbutton == FALSE) stepgreenbutton = TRUE;
+  else
+  {
+    switch (mode)
+    {
+    case 0:
+      
+      break;
+    
+    case 1:
 
+      break;
+    
+    case 2:
+
+      break;
+    }
+    stepgreenbutton = TRUE;
+  }
+  for (a=0; a<10000 ; a++) //cela prend environ 100ms a s'executer et remplace donc delay(100)
+  {
+    b++;
+  }
 }
