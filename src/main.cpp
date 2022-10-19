@@ -18,7 +18,7 @@ ChainableLED led(6, 7, 1);
 
 //tableau de couleur pour la LED
 int red[3]    = {255,0,0};
-int orange[3] = {255,128,0};
+int orange[3] = {153,76,0};
 int yellow[3] = {255,255,0};
 int green[3]  = {0,255,0};
 int blue[3]   = {0,0,255};
@@ -93,7 +93,7 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(redbutton),changemode_red_button ,CHANGE);
   attachInterrupt(digitalPinToInterrupt(greenbutton),changemode_green_button ,CHANGE);
 
-  if ( digitalRead(redbutton) == HIGH)
+  if ( digitalRead(redbutton) == LOW)
   {
     changement_mode(4);
     set_led_color(yellow);
@@ -175,7 +175,7 @@ void changemode_red_button()
   double long b;
   
   
-  if (stepredbutton == false  && digitalRead(redbutton) == LOW ) 
+  if (stepredbutton == false  && digitalRead(redbutton) == HIGH ) 
   {
     stepredbutton = false;
   }
@@ -219,15 +219,12 @@ void changemode_green_button()
   double long a;
   double long b;
   
-  if (stepredbutton == false  && digitalRead(greenbutton) == LOW ) 
-  {
-  stepredbutton = false;
-  }
-  if (stepgreenbutton == false && mode != 4 ) 
+  if (stepgreenbutton == false && mode != 4) 
   {
   stepgreenbutton = true;
   green_timer = millis();
   }
+  else if (millis() - green_timer < 200) ; 
   else if (millis() - green_timer >= 5000)
   {
     switch (mode)
@@ -248,13 +245,10 @@ void changemode_green_button()
   }
   else stepgreenbutton = false;
   #ifdef DEBUG
-  Serial.print("green button time:" );
+  Serial.print("green button time: " );
+  Serial.print(stepgreenbutton);
   Serial.println( millis() - green_timer);
   #endif
-  for (a=0; a<50000 ; a++) //cela prend assez de temps a s'executer pour remplacer delay() Nombre d'iteration encore a definir
-  {
-    b++;
-  }
 }
 
 void mesure_capteurs(capteur *pointeur)
