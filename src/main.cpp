@@ -4,6 +4,8 @@
 #include <ChainableLED.h>
 #include <I2C_RTC.h>
 #include <SparkFunBME280.h>
+#include <SoftwareSerial.h>
+#include <TinyGPS.h>
 
 #define ECHANTILLON_MOY 10
 #define NB_CAPTEURS 10
@@ -19,6 +21,8 @@
 static ChainableLED led(6, 7, 1);
 static DS1307 RTC;
 static BME280 vma;
+SoftwareSerial SoftSerial(4, 5);
+TinyGPS gps;
 
 //tableau de couleur pour la LED
 int red[3]    = {255,0,0};
@@ -81,13 +85,14 @@ typedef struct
   int annee;
 }structRTC;
 
-//prototype des fonctions
+//prototype des fonctiyons
 void mesure_capteurs(capteur *pointeur);
 void changemode_red_button();
 void changemode_green_button();
 void set_led_color(int rgb[3]);
 void changement_mode(int newmode);
 void getRTC();
+char getGPS();
 
 structRTC RealTimeClock;
 
@@ -101,8 +106,9 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(greenbutton),changemode_green_button ,CHANGE);
 
   
-
+  SoftSerial.begin(9600);  
   RTC.begin();
+
   vma.settings.commInterface = I2C_MODE; 
   vma.settings.I2CAddress = 0x76;
   vma.settings.runMode = 3; 
@@ -114,8 +120,9 @@ void setup()
   delay(20);
   vma.begin();
 
-  if ( digitalRead(redbutton) == HIGH)
+  if ( digitalRead(redbutton) == LOW)
   {
+    
     changement_mode(4);
     set_led_color(yellow);
     config_timer = millis();
@@ -130,6 +137,8 @@ void setup()
 
 void loop() 
 {
+  //Serial.println(getGPS(), 2);
+  delay(1000);
   switch (mode)
   {
   case 0:
@@ -192,7 +201,7 @@ void changement_mode(int newmode)
 
 void changemode_red_button()
 {  
-  if (stepredbutton == true  && digitalRead(redbutton) == HIGH ) 
+  if (stepredbutton == true  && digitalRead(redbutton) == 0 ) 
   {
     stepredbutton = false;
   }
@@ -202,8 +211,8 @@ void changemode_red_button()
     stepredbutton = true;
     red_timer = millis();
   }
-  else if (millis() - red_timer < 300) ; 
-  else if( millis() - red_timer >= 5000)
+  else if (millis() - red_timer < 300) stepredbutton = false; 
+  else if (millis() - red_timer >= 5000)
   {
     switch (mode)
     {
@@ -224,6 +233,8 @@ void changemode_red_button()
   else stepredbutton = false;
   #ifdef DEBUG
   Serial.print("red button time :" );
+  Serial.print(digitalRead(redbutton) );
+  Serial.print("   " );
   Serial.println( millis() - red_timer);
   #endif
 }
@@ -232,15 +243,15 @@ void changemode_green_button()
 {
   if (stepgreenbutton == true  && digitalRead(greenbutton) == HIGH ) 
   {
-    stepredbutton = false;
+    stepgreenbutton = false;
   }
 
   if (stepgreenbutton == false && mode != 4) 
   {
-  stepgreenbutton = true;
-  green_timer = millis();
+    stepgreenbutton = true;
+    green_timer = millis();
   }
-  else if (millis() - green_timer < 500); 
+  else if (millis() - green_timer < 200) stepgreenbutton = false; 
   else if (millis() - green_timer >= 5000)
   {
     switch (mode)
@@ -285,4 +296,19 @@ void getRTC()
   RealTimeClock.jour    = RTC.getDay();
   RealTimeClock.mois    = RTC.getMonth();
   RealTimeClock.annee   = RTC.getYear();
+}
+
+char getGPS()
+{
+  unsigned char buffer[64];
+  int count=0;
+  if (SoftSerial.available())
+  {
+    while(SoftSerial.available())               // reading data into char array
+        {
+            buffer[count++]=SoftSerial.read();      // writing data into array
+            if(count == 64)break;
+        }
+  }
+  return buffer;
 }
