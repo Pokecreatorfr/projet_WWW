@@ -8,7 +8,7 @@
 #include <TinyGPS.h>
 
 #define ECHANTILLON_MOY 10
-#define NB_CAPTEURS 10
+#define NB_CAPTEURS 4
 
 #define DEBUG
 
@@ -72,7 +72,7 @@ typedef struct
   int hist_moyenne[ECHANTILLON_MOY]; 
   int rgberror[3];                     
   int hertzerror;
-  int pin; // 255 correspond au port serie / 0 à 99 digital / 100 à 200 analog
+  int num; // 255 correspond au port serie / 0 à 99 digital / 100 à 200 analog
 }capteur;
 
 typedef struct 
@@ -96,8 +96,28 @@ char getGPS();
 
 structRTC RealTimeClock;
 
+capteur *captptr[NB_CAPTEURS];
+
+capteur captHum;
+capteur captTemp;
+capteur captPress;
+capteur captLum;
+
+
+
 void setup() 
 {
+  captptr[0]  = &captHum;
+  captptr[1]  = &captTemp;
+  captptr[2]  = &captPress;
+  captptr[3]  = &captLum;
+  int i; 
+  for (i=0 ; i<NB_CAPTEURS;i++)
+  {
+    captptr[i]->num =  i;
+  }
+  captHum.num = 0;
+  captTemp.num = 1;
   Serial.begin(9600);
   led.init();
   pinMode(redbutton,INPUT);
@@ -280,7 +300,27 @@ void changemode_green_button()
 
 void mesure_capteurs(capteur *pointeur)
 {
-  ;
+  int i = 0;
+  switch (pointeur->num)
+  {
+  case 0:
+    for (i= 0 ; i<ECHANTILLON_MOY ; i++)
+    {
+      pointeur->moyenne[i] = vma.readFloatHumidity()
+    }
+    break;
+  
+  case 1:
+    break;
+  
+  case 2:
+    
+    break;
+  
+  case 3:
+    
+    break;
+  
 }
 
 void set_led_color(int rgb[3])
