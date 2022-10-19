@@ -3,6 +3,7 @@
 #include <config.h>
 #include <ChainableLED.h>
 #include <I2C_RTC.h>
+#include <SparkFunBME280.h>
 
 #define ECHANTILLON_MOY 10
 #define NB_CAPTEURS 10
@@ -17,6 +18,7 @@
 
 static ChainableLED led(6, 7, 1);
 static DS1307 RTC;
+static BME280 vma;
 
 //tableau de couleur pour la LED
 int red[3]    = {255,0,0};
@@ -66,7 +68,7 @@ typedef struct
   int hist_moyenne[ECHANTILLON_MOY]; 
   int rgberror[3];                     
   int hertzerror;
-  int pin; // 255 correspond au port serie
+  int pin; // 255 correspond au port serie / 0 à 99 digital / 100 à 200 analog
 }capteur;
 
 typedef struct 
@@ -98,9 +100,19 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(redbutton),changemode_red_button ,CHANGE);
   attachInterrupt(digitalPinToInterrupt(greenbutton),changemode_green_button ,CHANGE);
 
+  
+
   RTC.begin();
-  RTC.setSeconds(60);
-  RTC.setHourMode(CLOCK_H24);
+  vma.settings.commInterface = I2C_MODE; 
+  vma.settings.I2CAddress = 0x76;
+  vma.settings.runMode = 3; 
+  vma.settings.tStandby = 0;
+  vma.settings.filter = 0;
+  vma.settings.tempOverSample = 1 ;
+  vma.settings.pressOverSample = 1;
+  vma.settings.humidOverSample = 1;
+  delay(20);
+  vma.begin();
 
   if ( digitalRead(redbutton) == HIGH)
   {
