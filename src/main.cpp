@@ -85,6 +85,9 @@ void changemode_red_button();
 void changemode_green_button();
 void set_led_color(int rgb[3]);
 void changement_mode(int newmode);
+void getRTC();
+
+structRTC RealTimeClock;
 
 void setup() 
 {
@@ -115,13 +118,6 @@ void setup()
 
 void loop() 
 {
-  Serial.print(RTC.getHours());
-  Serial.print(":");
-  Serial.print(RTC.getMinutes());
-  Serial.print(":");
-  Serial.print(RTC.getSeconds());
-  Serial.print(" ");
-  delay(1000);
   switch (mode)
   {
   case 0:
@@ -267,4 +263,14 @@ void mesure_capteurs(capteur *pointeur)
 void set_led_color(int rgb[3])
 {
   led.setColorRGB(0,rgb[0],rgb[1],rgb[2]);
+}
+
+void getRTC()
+{
+  RealTimeClock.seconde = RTC.getSeconds();
+  RealTimeClock.minute  = RTC.getMinutes();
+  RealTimeClock.heure   = RTC.getHours();
+  RealTimeClock.jour    = RTC.getDay();
+  RealTimeClock.mois    = RTC.getMonth();
+  RealTimeClock.annee   = RTC.getYear();
 }
