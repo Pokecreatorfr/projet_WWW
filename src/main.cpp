@@ -2,6 +2,7 @@
 #include <config.h>
 #include <config.h>
 #include <ChainableLED.h>
+#include <I2C_RTC.h>
 
 #define ECHANTILLON_MOY 10
 #define NB_CAPTEURS 10
@@ -14,7 +15,8 @@
 #define CONFIG_MODE_TIME 30
 #endif
 
-ChainableLED led(6, 7, 1);
+static ChainableLED led(6, 7, 1);
+static DS1307 RTC;
 
 //tableau de couleur pour la LED
 int red[3]    = {255,0,0};
@@ -93,7 +95,11 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(redbutton),changemode_red_button ,CHANGE);
   attachInterrupt(digitalPinToInterrupt(greenbutton),changemode_green_button ,CHANGE);
 
-  if ( digitalRead(redbutton) == LOW)
+  RTC.begin();
+  RTC.setSeconds(60);
+  RTC.setHourMode(CLOCK_H24);
+
+  if ( digitalRead(redbutton) == HIGH)
   {
     changement_mode(4);
     set_led_color(yellow);
@@ -109,6 +115,13 @@ void setup()
 
 void loop() 
 {
+  Serial.print(RTC.getHours());
+  Serial.print(":");
+  Serial.print(RTC.getMinutes());
+  Serial.print(":");
+  Serial.print(RTC.getSeconds());
+  Serial.print(" ");
+  delay(1000);
   switch (mode)
   {
   case 0:
@@ -170,21 +183,18 @@ void changement_mode(int newmode)
 }
 
 void changemode_red_button()
-{
-  double long a;
-  double long b;
-  
-  
-  if (stepredbutton == false  && digitalRead(redbutton) == HIGH ) 
+{  
+  if (stepredbutton == true  && digitalRead(redbutton) == HIGH ) 
   {
     stepredbutton = false;
   }
-
+  
   if (stepredbutton == false  && mode != 4 ) 
   {
     stepredbutton = true;
     red_timer = millis();
   }
+  else if (millis() - red_timer < 300) ; 
   else if( millis() - red_timer >= 5000)
   {
     switch (mode)
@@ -208,23 +218,21 @@ void changemode_red_button()
   Serial.print("red button time :" );
   Serial.println( millis() - red_timer);
   #endif
-  for (a=0; a<50000 ; a++) //cela prend assez de temps a s'executer pour remplacer delay() Nombre d'iteration encore a definir
-  {
-    b++;
-  }
 }
 
 void changemode_green_button()
 {
-  double long a;
-  double long b;
-  
+  if (stepgreenbutton == true  && digitalRead(greenbutton) == HIGH ) 
+  {
+    stepredbutton = false;
+  }
+
   if (stepgreenbutton == false && mode != 4) 
   {
   stepgreenbutton = true;
   green_timer = millis();
   }
-  else if (millis() - green_timer < 200) ; 
+  else if (millis() - green_timer < 500); 
   else if (millis() - green_timer >= 5000)
   {
     switch (mode)
