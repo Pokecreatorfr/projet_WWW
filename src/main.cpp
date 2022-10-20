@@ -6,9 +6,11 @@
 #include <SparkFunBME280.h>
 #include <SoftwareSerial.h>
 #include <TinyGPS.h>
+#include <SD.h>
+//#include <MemoryFree.h>
 
 #define ECHANTILLON_MOY 10
-#define NB_CAPTEURS 4
+#define NB_CAPTEURS 5
 
 #define DEBUG
 
@@ -21,16 +23,19 @@
 static ChainableLED led(6, 7, 1);
 static DS1307 RTC;
 static BME280 vma;
-SoftwareSerial SoftSerial(4, 5);
 TinyGPS gps;
+SoftwareSerial ss(8,9);
+File myfile;
+
+char lastfile[12];
 
 //tableau de couleur pour la LED
-int red[3]    = {255,0,0};
-int orange[3] = {153,76,0};
-int yellow[3] = {255,255,0};
-int green[3]  = {0,255,0};
-int blue[3]   = {0,0,255};
-int white[3]  = {255,255,255};
+const int PROGMEM red[3]    = {255,0,0};
+const int PROGMEM orange[3] = {153,76,0};
+const int PROGMEM yellow[3] = {255,255,0};
+const int PROGMEM green[3]  = {0,255,0};
+const int PROGMEM blue[3]   = {0,0,255};
+const int PROGMEM white[3]  = {255,255,255};
 
 
 int mode = 1;/*0 maintenance ; 1 standard  ; 2 eco || définit le mode actuel  */
@@ -43,37 +48,15 @@ int previous_mode = 1;
 bool stepredbutton = false;
 bool stepgreenbutton = false;
 unsigned long red_timer , green_timer , config_timer;
-const byte redbutton = 2;
-const byte greenbutton = 3;
+const PROGMEM byte redbutton = 2;
+const PROGMEM byte greenbutton = 3;
 
-#define No_GPS  5
+#define No_GPS  4
 
-int LOG_INTERVALL=10; // intervale entre 2 mesures
-int FILE_MAX_SIZE=4096; // taille d'un fichier log
+int LOG_INTERVALL=1; // intervale entre 2 mesures
+int FILE_MAX_SIZE=2048; // taille d'un fichier log
 int TIMEOUT=30; //
 
-typedef struct historique
-{
-  int data; ///a faire pour chaque capteur 
-  int seconde;
-  int minute;
-  int heure;
-  int jour;
-  int mois;
-  int annee;
-  struct historique*suivant;
-}historique;
-
-typedef struct
-{
-  String value; // la valeur sera stockée sous forme de texte
-  bool error;
-  float moyenne;
-  int hist_moyenne[ECHANTILLON_MOY]; 
-  int rgberror[3];                     
-  int hertzerror;
-  int num; // 255 correspond au port serie / 0 à 99 digital / 100 à 200 analog
-}capteur;
 
 typedef struct 
 {
@@ -85,39 +68,26 @@ typedef struct
   int annee;
 }structRTC;
 
-//prototype des fonctiyons
-void mesure_capteurs(capteur *pointeur);
+//prototype des fonctions
+String mesure_capteurs(int num);
 void changemode_red_button();
 void changemode_green_button();
-void set_led_color(int rgb[3]);
+void set_led_color(const int rgb[3]);
 void changement_mode(int newmode);
 void getRTC();
-char getGPS();
+void store_to_sd(String str);
+static void smartdelay(unsigned long ms);
+String getGPS();
+float moy_float(int tab[ECHANTILLON_MOY]);
 
 structRTC RealTimeClock;
 
-capteur *captptr[NB_CAPTEURS];
-
-capteur captHum;
-capteur captTemp;
-capteur captPress;
-capteur captLum;
 
 
 
 void setup() 
 {
-  captptr[0]  = &captHum;
-  captptr[1]  = &captTemp;
-  captptr[2]  = &captPress;
-  captptr[3]  = &captLum;
-  int i; 
-  for (i=0 ; i<NB_CAPTEURS;i++)
-  {
-    captptr[i]->num =  i;
-  }
-  captHum.num = 0;
-  captTemp.num = 1;
+  SD.begin(4);
   Serial.begin(9600);
   led.init();
   pinMode(redbutton,INPUT);
@@ -126,7 +96,7 @@ void setup()
   attachInterrupt(digitalPinToInterrupt(greenbutton),changemode_green_button ,CHANGE);
 
   
-  SoftSerial.begin(9600);  
+  ss.begin(9600);  
   RTC.begin();
 
   vma.settings.commInterface = I2C_MODE; 
@@ -152,13 +122,18 @@ void setup()
     }
     changement_mode(1);
   }
-
+  delay(300);
 }
 
 void loop() 
 {
-  //Serial.println(getGPS(), 2);
-  delay(1000);
+  String z;
+  Serial.println(sizeof(int));
+  delay(10);
+  //Serial.println(millis() % (LOG_INTERVALL*10000 * mode));
+  //Serial.println(z);
+  String values;
+  //z = mesure_capteurs(0);
   switch (mode)
   {
   case 0:
@@ -171,11 +146,10 @@ void loop()
     set_led_color(blue);
     break;
   }
-  capteur *tabptr[NB_CAPTEURS];
   int i ;
   if (mode > 0)
   {
-    if (millis() % (LOG_INTERVALL*60000 * mode) == 0)
+    if (millis() % (LOG_INTERVALL*10000 * mode) < 100 )
     {
       //readRTC();
       for (i = 0 ; i< NB_CAPTEURS ; i++)
@@ -184,20 +158,22 @@ void loop()
         {
           if (i == No_GPS)
           {
-            if (millis() % (LOG_INTERVALL*60000 * 4) == 0) mesure_capteurs(tabptr[i]) ;
+            if (millis() % (LOG_INTERVALL*60000 * 4) <1000) values += mesure_capteurs(i) ;
           }
           else
           {
-            mesure_capteurs(tabptr[i]);
+            values += mesure_capteurs(i);
           }
         }
         else
         {
-          mesure_capteurs(tabptr[i]) ;
+          values += mesure_capteurs(i) ;
         }
 
-      //data_to_history();
+      store_to_sd("sgt");
       }
+      Serial.println("puuuute" + String(millis()));
+      delay(1000);
     }
   }
   else
@@ -206,6 +182,7 @@ void loop()
     {
       ;//permettre d'ecceder aux données de la carte SD depuis le port série avec des commandes
     }
+  smartdelay(1000);
 }
 
 }
@@ -298,32 +275,52 @@ void changemode_green_button()
   #endif
 }
 
-void mesure_capteurs(capteur *pointeur)
+String mesure_capteurs(int num)
 {
   int i = 0;
-  switch (pointeur->num)
+  int moyenne[ECHANTILLON_MOY];
+  switch (num)
   {
   case 0:
     for (i= 0 ; i<ECHANTILLON_MOY ; i++)
     {
-      pointeur->moyenne[i] = vma.readFloatHumidity()
+      moyenne[i] = vma.readFloatHumidity();
     }
+    Serial.println(String(moy_float(moyenne)));
+    return  String(moy_float(moyenne));
     break;
   
   case 1:
+    for (i= 0 ; i<ECHANTILLON_MOY ; i++)
+    {
+      moyenne[i] = vma.readTempC();
+    }
+    return  String(moy_float(moyenne));
     break;
   
   case 2:
-    
+    for (i= 0 ; i<ECHANTILLON_MOY ; i++)
+    {
+      moyenne[i] = vma.readFloatPressure();
+    }
+    return String(moy_float(moyenne));
     break;
   
   case 3:
-    
+    for (i= 0 ; i<ECHANTILLON_MOY ; i++)
+    {
+      moyenne[i] = analogRead(A0);
+    }
+    return String(moy_float(moyenne));
     break;
-  
+  case 4:
+    return  getGPS();
+    break;
+  }
 }
 
-void set_led_color(int rgb[3])
+
+void set_led_color(const int rgb[3])
 {
   led.setColorRGB(0,rgb[0],rgb[1],rgb[2]);
 }
@@ -338,17 +335,47 @@ void getRTC()
   RealTimeClock.annee   = RTC.getYear();
 }
 
-char getGPS()
+String getGPS()
 {
-  unsigned char buffer[64];
-  int count=0;
-  if (SoftSerial.available())
+  float flat, flon;
+  smartdelay(200);
+  gps.f_get_position(&flat, &flon);
+  return "Latitude : " + String(flat , 3) + " Longitude : " + String(flon , 3);
+}
+
+static void smartdelay(unsigned long ms)
+{
+  unsigned long start = millis();
+  do 
   {
-    while(SoftSerial.available())               // reading data into char array
-        {
-            buffer[count++]=SoftSerial.read();      // writing data into array
-            if(count == 64)break;
-        }
+    while (ss.available())
+      gps.encode(ss.read());
+  } while (millis() - start < ms);
+}
+
+float moy_float(int tab[ECHANTILLON_MOY])
+{
+  int i;
+  float result;
+  for (i=0 ; i<ECHANTILLON_MOY ; i++)
+  {
+    result += tab[i];
   }
-  return buffer;
+  //Serial.println(freeMemory());
+  return result/ECHANTILLON_MOY;
+}
+
+void store_to_sd(String str)
+{
+  int i = 0;
+  String filename;
+  myfile = SD.open(lastfile , FILE_WRITE);
+  if (myfile.size() + sizeof(str) > FILE_MAX_SIZE) 
+  {
+    getRTC();
+    myfile.close();
+    filename = String(RealTimeClock.annee) + String(RealTimeClock.mois) + String(RealTimeClock.jour) 
+    myfile.op
+  }
+  myfile.close();
 }
