@@ -51,7 +51,7 @@ const PROGMEM byte greenbutton = 3;
 
 #define No_GPS  4
 
-int LOG_INTERVALL=1; // intervale entre 2 mesures
+int LOG_INTERVALL=10; // intervale entre 2 mesures
 int FILE_MAX_SIZE=2048; // taille d'un fichier log
 byte TIMEOUT=30; //
 
@@ -376,7 +376,7 @@ void store_to_sd(String str)
     getRTC();
     myfile.close();
 
-    filename = String(RealTimeClock.annee) + "/"+ String(RealTimeClock.mois) +"/"+ String(RealTimeClock.jour) + "/"+  +".txt";
+    filename = "LOGS/" + String(RealTimeClock.annee - 2000 ) + String(RealTimeClock.mois) + String(RealTimeClock.jour) +".txt";
   }
   myfile.close();
-}
+} 
