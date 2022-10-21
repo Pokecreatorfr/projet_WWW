@@ -1,18 +1,16 @@
 #include <Arduino.h>
-#include <config.h>
-#include <config.h>
 #include <ChainableLED.h>
 #include <I2C_RTC.h>
 #include <SparkFunBME280.h>
 #include <SoftwareSerial.h>
 #include <TinyGPS.h>
 #include <SD.h>
-//#include <MemoryFree.h>
+#include <MemoryFree.h>
 
 #define ECHANTILLON_MOY 10
 #define NB_CAPTEURS 5
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define CONFIG_MODE_TIME 1
@@ -30,17 +28,17 @@ File myfile;
 char lastfile[12];
 
 //tableau de couleur pour la LED
-const int PROGMEM red[3]    = {255,0,0};
-const int PROGMEM orange[3] = {153,76,0};
-const int PROGMEM yellow[3] = {255,255,0};
-const int PROGMEM green[3]  = {0,255,0};
-const int PROGMEM blue[3]   = {0,0,255};
-const int PROGMEM white[3]  = {255,255,255};
+const byte red[3]    = {255,0,0};
+const byte orange[3] = {153,76,0};
+const byte yellow[3] = {255,255,0};
+const byte green[3]  = {0,255,0};
+const byte blue[3]   = {0,0,255};
+const byte white[3]  = {255,255,255};
 
 
-int mode = 1;/*0 maintenance ; 1 standard  ; 2 eco || définit le mode actuel  */
-int previous_mode = 1;
-#define MAINTENANCE 0 
+byte mode = 1;/*0 maintenance ; 1 standard  ; 2 eco || définit le mode actuel  */
+byte previous_mode = 1;
+#define MAINTENANCE 0
 #define STANDARD    1
 #define ECO         2
 
@@ -55,25 +53,25 @@ const PROGMEM byte greenbutton = 3;
 
 int LOG_INTERVALL=1; // intervale entre 2 mesures
 int FILE_MAX_SIZE=2048; // taille d'un fichier log
-int TIMEOUT=30; //
+byte TIMEOUT=30; //
 
 
 typedef struct 
 {
-  int seconde;
-  int minute;
-  int heure;
-  int jour;
-  int mois;
+  byte seconde;
+  byte minute;
+  byte heure;
+  byte jour;
+  byte mois;
   int annee;
 }structRTC;
 
 //prototype des fonctions
-String mesure_capteurs(int num);
+String mesure_capteurs(byte num);
 void changemode_red_button();
 void changemode_green_button();
-void set_led_color(const int rgb[3]);
-void changement_mode(int newmode);
+void set_led_color(const byte rgb[3]);
+void changement_mode(byte newmode);
 void getRTC();
 void store_to_sd(String str);
 static void smartdelay(unsigned long ms);
@@ -127,13 +125,8 @@ void setup()
 
 void loop() 
 {
-  String z;
-  Serial.println(sizeof(int));
   delay(10);
-  //Serial.println(millis() % (LOG_INTERVALL*10000 * mode));
-  //Serial.println(z);
   String values;
-  //z = mesure_capteurs(0);
   switch (mode)
   {
   case 0:
@@ -146,7 +139,7 @@ void loop()
     set_led_color(blue);
     break;
   }
-  int i ;
+  byte i ;
   if (mode > 0)
   {
     if (millis() % (LOG_INTERVALL*10000 * mode) < 100 )
@@ -170,24 +163,31 @@ void loop()
           values += mesure_capteurs(i) ;
         }
 
-      store_to_sd("sgt");
+      
       }
-      Serial.println("puuuute" + String(millis()));
-      delay(1000);
+      store_to_sd(values + "\n");
+      values = "";
+      delay(100);
     }
   }
   else
   {
-    while (mode == 2)
+    while (mode == 0)
     {
-      ;//permettre d'ecceder aux données de la carte SD depuis le port série avec des commandes
+      getRTC();
+      values = String(RealTimeClock.heure) + ":" + String(RealTimeClock.minute )+ ":" + String(RealTimeClock.seconde) + "  ";
+      for (i=0 ; i<NB_CAPTEURS ; i++)
+      {
+        values += mesure_capteurs(i);
+      }
+      Serial.println(values);
+      values = "";
     }
-  smartdelay(1000);
+    
+  }
 }
 
-}
-
-void changement_mode(int newmode)
+void changement_mode(byte newmode)
 {
   previous_mode = mode;
   mode = newmode;
@@ -275,9 +275,9 @@ void changemode_green_button()
   #endif
 }
 
-String mesure_capteurs(int num)
+String mesure_capteurs(byte num)
 {
-  int i = 0;
+  byte i = 0;
   int moyenne[ECHANTILLON_MOY];
   switch (num)
   {
@@ -286,8 +286,7 @@ String mesure_capteurs(int num)
     {
       moyenne[i] = vma.readFloatHumidity();
     }
-    Serial.println(String(moy_float(moyenne)));
-    return  String(moy_float(moyenne));
+    return  " H: " + String(moy_float(moyenne));
     break;
   
   case 1:
@@ -295,15 +294,15 @@ String mesure_capteurs(int num)
     {
       moyenne[i] = vma.readTempC();
     }
-    return  String(moy_float(moyenne));
+    return  "T :" + String(moy_float(moyenne)) + " C";
     break;
   
   case 2:
     for (i= 0 ; i<ECHANTILLON_MOY ; i++)
     {
-      moyenne[i] = vma.readFloatPressure();
+      moyenne[i] = vma.readFloatPressure() / 100;
     }
-    return String(moy_float(moyenne));
+    return "P :" +  String(moy_float(moyenne)) +" hPa" ;
     break;
   
   case 3:
@@ -311,7 +310,7 @@ String mesure_capteurs(int num)
     {
       moyenne[i] = analogRead(A0);
     }
-    return String(moy_float(moyenne));
+    return "Lum :" +String(moy_float(moyenne));
     break;
   case 4:
     return  getGPS();
@@ -320,7 +319,7 @@ String mesure_capteurs(int num)
 }
 
 
-void set_led_color(const int rgb[3])
+void set_led_color(const byte rgb[3])
 {
   led.setColorRGB(0,rgb[0],rgb[1],rgb[2]);
 }
@@ -355,7 +354,7 @@ static void smartdelay(unsigned long ms)
 
 float moy_float(int tab[ECHANTILLON_MOY])
 {
-  int i;
+  byte i;
   float result;
   for (i=0 ; i<ECHANTILLON_MOY ; i++)
   {
@@ -367,15 +366,17 @@ float moy_float(int tab[ECHANTILLON_MOY])
 
 void store_to_sd(String str)
 {
-  int i = 0;
+  byte i = 0;
   String filename;
-  myfile = SD.open(lastfile , FILE_WRITE);
+  getRTC();
+  //myfile = SD.open(lastfile , FILE_WRITE);
+  //Serial.println(freeMemory());
   if (myfile.size() + sizeof(str) > FILE_MAX_SIZE) 
   {
     getRTC();
     myfile.close();
-    filename = String(RealTimeClock.annee) + String(RealTimeClock.mois) + String(RealTimeClock.jour) 
-    myfile.op
+
+    filename = String(RealTimeClock.annee) + "/"+ String(RealTimeClock.mois) +"/"+ String(RealTimeClock.jour) + "/"+  +".txt";
   }
   myfile.close();
 }
